@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>정산 분석</title>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body { font-family: sans-serif; padding: 20px; }
+    .filters { margin-bottom: 20px; }
+    .card { display: inline-block; margin: 10px; padding: 10px 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+    .card-title { font-weight: bold; margin-bottom: 5px; }
+    .card-value { font-size: 20px; color: #007bff; }
+    canvas { margin-top: 30px; }
+  </style>
+</head>
+<body>
+<h2>📊 정산 분석</h2>
+<div class="filters">
+<label>시작일: <input id="from-date" type="date"/></label>
+<label>종료일: <input id="to-date" type="date"/></label>
+<label><input checked="" id="include-sat" type="checkbox"/> 토요일 포함</label>
+<label><input checked="" name="unit" type="radio" value="day"/> 일 단위</label>
+<label><input name="unit" type="radio" value="month"/> 월 단위</label>
+<button onclick="loadAnalysis()">🔍 분석하기</button>
+<a href="/calendar" style="margin-left: 20px;">📅 달력으로 이동</a>
+</div>
+<div id="summary-cards"></div>
+<canvas height="100" id="trend-chart"></canvas>
+<canvas height="80" id="prescription-chart"></canvas>
+<script>
+    async function loadAnalysis() {
+      const from = document.getElementById('from-date').value;
+      const to = document.getElementById('to-date').value;
+      const includeSat = document.getElementById('include-sat').checked;
+      const unit = document.querySelector('input[name="unit"]:checked').value;
+
+      const url = `/report/analyze?start=${from}&end=${to}&include_saturday=${includeSat}&unit=${unit}`;
+      const res = await axios.get(url);
+      const data = res.data;
+
+      const summary = data.summary;
+      const trend = data.trend;
+      console.log("📊 trend 데이터:", trend);
+
+      const labelPrefix = unit === 'month' ? '월' : '일';
+
+      
+      document.getElementById('summary-cards').innerHTML = `
+        <div class="card"><div class="card-title">총 매출</div><div class="card-value">₩${summary.total_sales.toLocaleString()}</div></div>
+        <div class="card"><div class="card-title">${labelPrefix} 평균 매출</div><div class="card-value">₩${summary.average_sales.toLocaleString()}</div></div>
+        <div class="card"><div class="card-title">최고 매출 ${unit === 'month' ? '월' : '일'}</div><div class="card-value">${summary.max_sales_date}</div></div>
+        <div class="card"><div class="card-title">최저 매출 ${unit === 'month' ? '월' : '일'}</div><div class="card-value">${summary.min_sales_date}</div></div>
+        <div class="card"><div class="card-title">총 처방</div><div class="card-value">${summary.total_prescriptions}건</div></div>
+        <div class="card"><div class="card-title">${labelPrefix} 평균 처방</div><div class="card-value">${summary.average_prescriptions}건</div></div>
+        <div class="card"><div class="card-title">최고 처방건수</div><div class="card-value">${summary.max_prescriptions_date}</div></div>
+        <div class="card"><div class="card-title">최저 처방건수</div><div class="card-value">${summary.min_prescriptions_date}</div></div>
+      `;
+    
+
+      if (window.trendChart) window.trendChart.destroy();
+      if (window.presChart) window.presChart.destroy();
+
+      const ctx1 = document.getElementById('trend-chart').getContext('2d');
+      window.trendChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: trend.map(d => d.date),
+          datasets: [{
+            label: unit === 'month' ? '월 매출' : '일 매출',
+            data: trend.map(d => d.sales),
+            borderColor: '#007bff',
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              title: { display: true, text: unit === 'month' ? '월' : '날짜' },
+              ticks: {
+                autoSkip: unit !== 'month',
+                maxTicksLimit: unit === 'month' ? undefined : 31
+              }
+            },
+            y: { title: { display: true, text: '매출 (₩)' }}
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById('prescription-chart').getContext('2d');
+      window.presChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: trend.map(d => d.date),
+          datasets: [{
+            label: unit === 'month' ? '월 처방건수' : '일 처방건수',
+            data: trend.map(d => d.prescriptions || 0),
+            borderColor: '#28a745',
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              title: { display: true, text: unit === 'month' ? '월' : '날짜' },
+              ticks: {
+                autoSkip: unit !== 'month',
+                maxTicksLimit: unit === 'month' ? undefined : 31
+              }
+            },
+            y: { title: { display: true, text: '처방 건수' }}
+          }
+        }
+      });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('from-date').value = today.slice(0, 8) + '01';
+    document.getElementById('to-date').value = today;
+    loadAnalysis();
+  </script>
+</body>
+</html>
