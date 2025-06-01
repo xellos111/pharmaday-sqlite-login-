@@ -68,6 +68,7 @@ function deleteReport() {
 }
 
 </script>
+
   <style>
 /* 상단 메뉴 스타일 */
 .top-menu {
@@ -272,8 +273,21 @@ function deleteReport() {
       display: block;
     }
   </style>
+
+  <style>
+    .mobile-only { display: none; }
+    .pc-only { display: block; }
+
+    @media (max-width: 768px) {
+      .mobile-only { display: block; }
+      .pc-only { display: none; }
+    }
+  </style>
 </head>
 <body>
+  <div class="pc-only alert alert-info text-center">💻 데스크탑</div>
+  <div class="mobile-only alert alert-warning text-center">📱 모바일</div>
+
   <div class="top-menu">
     <div class="analyze-button">
       <a href="/analyze" class="menu-button analyze">📊 분석 페이지</a>
@@ -452,5 +466,9 @@ function deleteReport() {
 }
 
 </script>
+<footer style="text-align:center; font-size:11px; color:#aaa; margin-top:20px;">
+  ⓒ 2025 PharmaDay — <a href="/credits" style="color:#aaa; text-decoration:none;">made by Cephalosporin</a>
+</footer>
+
 </body>
 </html>

@@ -23,8 +23,21 @@
             color: #333;
         }
     </style>
+
+  <style>
+    .mobile-only { display: none; }
+    .pc-only { display: block; }
+
+    @media (max-width: 768px) {
+      .mobile-only { display: block; }
+      .pc-only { display: none; }
+    }
+  </style>
 </head>
 <body>
+  <div class="pc-only alert alert-info text-center">💻 데스크탑</div>
+  <div class="mobile-only alert alert-warning text-center">📱 모바일</div>
+
     <div class="container">
         <div class="login-container">
             <h2 class="login-title">로그인</h2>
@@ -50,3 +63,7 @@
     </div>
 </body>
 </html>
+
+<footer style="text-align:center; font-size:11px; color:#aaa; margin-top:20px;">
+  ⓒ 2025 PharmaDay — <a href="/credits" style="color:#aaa; text-decoration:none;">made by Cephalosporin</a>
+</footer>

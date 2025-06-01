@@ -6,8 +6,25 @@ from dateutil.relativedelta import relativedelta
 from db import get_connection
 from passlib.hash import pbkdf2_sha256
 from functools import wraps
+import sys
+import os
+import socket
 
-app = Flask(__name__)
+def is_port_in_use(port=5000):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+if is_port_in_use():
+    print("이미 실행 중입니다.")
+    sys.exit()
+
+
+if getattr(sys, 'frozen', False):  # PyInstaller로 빌드된 경우
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
 app.secret_key = 'your-secret-key-here'  # 실제 운영 환경에서는 안전한 키로 변경 필요
 
 @app.route('/')
@@ -130,6 +147,18 @@ def change_password():
             conn.close()
     
     return render_template('change_password.html')
+
+@app.route('/credits')
+def credits():
+    return """
+    <div style='text-align:center; margin-top:50px; font-family:sans-serif; color:#555;'>
+        <h3>PharmaDay</h3>
+        <p>Made by <strong>Cephalosporin</strong></p>
+        <p>© 2025. All rights reserved.</p>
+        <a href="/" style="color:#888;">← 돌아가기</a>
+    </div>
+    """
+
 
 @app.route('/')
 @login_required
@@ -570,9 +599,19 @@ def analyze_report():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    import webbrowser
+    import threading
+    import time
 
+    # 서버 실행 (새 스레드)
+    def run_server():
+        app.run(host='0.0.0.0', port=5000, debug=False)
 
+    threading.Thread(target=run_server).start()
+
+    # 서버가 뜨길 잠깐 기다렸다가 브라우저 자동 실행
+    time.sleep(3)
+    webbrowser.open("http://127.0.0.1:5000")
 
 
 

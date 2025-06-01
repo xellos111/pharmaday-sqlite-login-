@@ -4,6 +4,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>정산 분석</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,8 +16,21 @@
     .card-value { font-size: 20px; color: #007bff; }
     canvas { margin-top: 30px; }
   </style>
+
+  <style>
+    .mobile-only { display: none; }
+    .pc-only { display: block; }
+
+    @media (max-width: 768px) {
+      .mobile-only { display: block; }
+      .pc-only { display: none; }
+    }
+  </style>
 </head>
 <body>
+  <div class="pc-only alert alert-info text-center">💻 데스크탑</div>
+  <div class="mobile-only alert alert-warning text-center">📱 모바일</div>
+
 <h2>📊 정산 분석</h2>
 <div class="filters">
 <label>시작일: <input id="from-date" type="date"/></label>
@@ -87,7 +101,14 @@
                 maxTicksLimit: unit === 'month' ? undefined : 31
               }
             },
-            y: { title: { display: true, text: '매출 (₩)' }}
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: '매출 (₩)' },
+              ticks: {
+                stepSize: 100000,
+                callback: value => '₩' + value.toLocaleString()
+              }
+            }
           }
         }
       });
@@ -116,7 +137,14 @@
                 maxTicksLimit: unit === 'month' ? undefined : 31
               }
             },
-            y: { title: { display: true, text: '처방 건수' }}
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: '처방 건수' },
+              ticks: {
+                stepSize: 20,
+                callback: value => value + '건'
+              }
+            }
           }
         }
       });
@@ -129,3 +157,7 @@
   </script>
 </body>
 </html>
+<footer style="text-align:center; font-size:11px; color:#aaa; margin-top:20px;">
+  ⓒ 2025 PharmaDay — <a href="/credits" style="color:#aaa; text-decoration:none;">made by Cephalosporin</a>
+</footer>
+

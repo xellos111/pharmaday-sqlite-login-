@@ -1,14 +1,18 @@
 import sqlite3
 import os
 import datetime
+import sys
 
-DB_FILE = 'pharmaday.db'
+# PyInstaller 경로 대응
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DB_FILE = os.path.join(BASE_DIR, 'pharmaday.db')
 
 def dict_factory(cursor, row):
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 def adapt_date(val):
     return val.strftime('%Y-%m-%d')
@@ -40,7 +44,7 @@ def get_connection():
 def init_db():
     conn = get_connection()
     cur = conn.cursor()
-    
+
     # Create daily_reports table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS daily_reports (
@@ -53,7 +57,7 @@ def init_db():
             is_manual_holiday BOOLEAN
         )
     ''')
-    
+
     # Create users table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -63,30 +67,22 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
-    # Check if default admin user exists
+
+    # 기본 계정 삽입
     cur.execute('SELECT COUNT(*) FROM users')
     if cur.fetchone()[0] == 0:
-        # Create default admin user (username: 1, password: 1)
         from passlib.hash import pbkdf2_sha256
-        # 기본 관리자 계정 생성
-        cur.execute('SELECT * FROM users WHERE username = ?', ('1',))
-        if not cur.fetchone():
-            cur.execute(
-                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                ('1', pbkdf2_sha256.hash('1'))
-            )
-        
-        # 디버그용 계정 생성
-        cur.execute('SELECT * FROM users WHERE username = ?', ('pharmmaker',))
-        if not cur.fetchone():
-            cur.execute(
-                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                ('pharmmaker', pbkdf2_sha256.hash('pharmmaker123'))
-            )
-    
+        accounts = [
+            ('1', pbkdf2_sha256.hash('1')),
+            ('pharmmaker', pbkdf2_sha256.hash('pharmmaker123'))
+        ]
+        for username, hashval in accounts:
+            cur.execute('SELECT * FROM users WHERE username = ?', (username,))
+            if not cur.fetchone():
+                cur.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, hashval))
+
     conn.commit()
     conn.close()
 
-# Initialize database when module is imported
+# 앱 실행 시 자동 DB 초기화
 init_db()
