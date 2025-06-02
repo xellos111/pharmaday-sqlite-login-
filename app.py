@@ -10,6 +10,19 @@ import sys
 import os
 import socket
 
+def get_server_info():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))  # 외부로 연결 시도 (실제 전송 없음)
+        ip = s.getsockname()[0]
+        s.close()
+    except:
+        ip = '127.0.0.1'
+
+    port = 5000  # 현재 하단 run_server에서 고정값이므로 하드코딩
+    return ip, port
+
+
 def is_port_in_use(port=5000):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
@@ -27,18 +40,6 @@ else:
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
 app.secret_key = 'your-secret-key-here'  # 실제 운영 환경에서는 안전한 키로 변경 필요
 
-@app.route('/')
-def index():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('calendar.html')
-
-@app.route('/calendar')
-def calendar():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('calendar.html')
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -47,10 +48,26 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+@app.route('/')
+def index():
+    server_ip, server_port = get_server_info()
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('calendar.html', server_ip=server_ip, server_port=server_port)
+
+@app.route('/calendar')
+@login_required
+def calendar():
+    server_ip, server_port = get_server_info()
+    return render_template('calendar.html', server_ip=server_ip, server_port=server_port)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
         return redirect(url_for('index'))
+
+    server_ip, server_port = get_server_info()
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -70,7 +87,7 @@ def login():
             return redirect(next_page or url_for('index'))
         
         flash('아이디 또는 비밀번호가 잘못되었습니다.')
-    return render_template('login.html')
+    return render_template('login.html', server_ip=server_ip, server_port=server_port)
 
 @app.route('/logout')
 @login_required
