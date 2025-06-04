@@ -345,7 +345,7 @@ def upsert_report_by_date(date_str):
 
         data = request.get_json()
         
-        # Convert date string to date object
+        # date_str parsed earlier; parse again to ensure a date object
         date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
 
         conn = get_connection()
