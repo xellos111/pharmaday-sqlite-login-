@@ -191,7 +191,7 @@ def create_report():
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO daily_reports (date, total_sales, prescription_count, notes, is_holiday, is_manual_holiday)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             data['date'],
             data['total_sales'],
